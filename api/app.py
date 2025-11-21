@@ -279,7 +279,7 @@ def cupo_recomendado(sample: dict, pd_hat: float, score_raw: float, categoria: s
 
 # --- 3. Definir el Endpoint de la API ---
 
-@app.route('/api/api_analysis', methods=['POST'])
+@app.route('/api_analysis', methods=['POST'])
 def handler():
     """
     Recibe los datos financieros, calcula el score y devuelve un análisis completo.
