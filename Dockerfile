@@ -1,12 +1,22 @@
-FROM python:3.11-slim
+# Imagen base
+FROM python:3.10-slim
 
+# Crear directorio de trabajo
 WORKDIR /app
 
+# Copiar requirements primero para aprovechar cache
 COPY requirements.txt .
+
+# Instalar dependencias
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+# Copiar el código y el modelo
+COPY api/ ./api/
 
-ENV PORT=8080
+# Exponer el puerto (Cloud Run usa $PORT)
+EXPOSE 8080
 
-CMD exec gunicorn --bind 0.0.0.0:$PORT app:app
+# Comando de ejecución.
+# Asumo que `api_analysis.py` expone `app = Flask(__name__)`
+# Ajusta si tu archivo principal se llama distinto.
+CMD ["python", "api/api_analysis.py"]
