@@ -50,7 +50,7 @@ model = None
 def get_model():
     global model
     if model is None:
-        model_path = os.path.join(os.path.dirname(__file__), 'alfix_model.pkl')
+        #model_path = os.path.join(os.path.dirname(__file__), 'alfix_model.pkl')
         model = joblib.load('alfix_model.pkl')
     return model
 
