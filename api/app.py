@@ -46,6 +46,14 @@ app = Flask(__name__)
 #except FileNotFoundError:
 
 model = None
+
+def get_model():
+    global model
+    if model is None:
+        model_path = os.path.join(os.path.dirname(__file__), 'alfix_model.pkl')
+        model = joblib.load(model_path)
+    return model
+
 # Parámetros de escalamiento del score
 SCORING_OFFSET = 437.9502843417596
 SCORING_FACTOR = 95.25948800838954
@@ -302,7 +310,11 @@ def handler():
         input_df = pd.DataFrame([user_data], columns=FINAL_COLUMNS)
         
         # Predecir Probabilidad de Default (PD)
-        pd_probability = model.predict_proba(input_df)[0][1]
+        #pd_probability = model.predict_proba(input_df)[0][1]
+        
+        mdl = get_model()
+        pd_probability = mdl.predict_proba(input_df)[0][1]
+
 
         # Calcular Score (crudo y final)
         score_raw = pd_to_score(pd_probability) # Usa la función con protección
