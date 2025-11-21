@@ -31,12 +31,6 @@ import pandas as pd
 import os
 import bisect
 import warnings
-import logging
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s"
-)
 
 warnings.filterwarnings("ignore")
 
@@ -44,35 +38,12 @@ app = Flask(__name__)
 
 # --- 1. Cargar Artefactos y Constantes ---
 
-# Load model synchronously at startup. If missing, fail fast so Cloud Run
-# restarts the container and you get a clear deployment error instead of
-# allowing the service to run without the model.
-MODEL_PATH = os.environ.get("MODEL_PATH") or os.path.join(os.path.dirname(__file__), 'alfix_model.pkl')
-model = None
-
-def load_model():
-    """Carga el modelo desde `MODEL_PATH`. Lanza excepciones si falla.
-
-    Esto asegura que el contenedor falle al inicio si el archivo no existe,
-    evitando que la API arranque en un estado inválido (model == None).
-    """
-    global model
-    try:
-        logging.info(f"Loading model from {MODEL_PATH}")
-        model = joblib.load(MODEL_PATH)
-        logging.info("Model loaded successfully.")
-    except FileNotFoundError:
-        logging.exception(f"Model file not found at {MODEL_PATH}.")
-        raise
-    except Exception:
-        logging.exception("Failed to load the model.")
-        raise
-
-# Ejecutar carga en el arranque (sin hilos). Si falta el archivo, el proceso
-# terminará con excepción y Cloud Run marcará el despliegue como fallido.
-load_model()
-
-
+try:
+    # Cargar modelo
+    model_path = os.path.join(os.path.dirname(__file__), 'alfix_model.pkl')
+    model = joblib.load(model_path)
+except FileNotFoundError:
+    model = None
 
 # Parámetros de escalamiento del score
 SCORING_OFFSET = 437.9502843417596
@@ -308,7 +279,7 @@ def cupo_recomendado(sample: dict, pd_hat: float, score_raw: float, categoria: s
 
 # --- 3. Definir el Endpoint de la API ---
 
-@app.route('/api_analysis', methods=['POST'])
+@app.route('/api/api_analysis', methods=['POST'])
 def handler():
     """
     Recibe los datos financieros, calcula el score y devuelve un análisis completo.
@@ -330,12 +301,7 @@ def handler():
         input_df = pd.DataFrame([user_data], columns=FINAL_COLUMNS)
         
         # Predecir Probabilidad de Default (PD)
-        #pd_probability = model.predict_proba(input_df)[0][1]
-        if model is None:
-            return jsonify({"error": "Modelo cargando, intenta nuevamente."}), 503
-
         pd_probability = model.predict_proba(input_df)[0][1]
-
 
         # Calcular Score (crudo y final)
         score_raw = pd_to_score(pd_probability) # Usa la función con protección
@@ -373,7 +339,3 @@ def handler():
     except Exception as e:
         # Capturar cualquier otro error durante la ejecución
         return jsonify({"error": f"Error interno del servidor: {str(e)}"}), 500
-    
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8080))
-    app.run(host="0.0.0.0", port=port, debug=False)
