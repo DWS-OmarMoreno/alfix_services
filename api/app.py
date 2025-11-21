@@ -52,15 +52,18 @@ app = Flask(__name__)
 #except FileNotFoundError:
 
 model = None
+import threading
 
-def get_model():
+model = None
+
+def load_model_async():
     global model
-    if model is None:
-        logging.info("Cargando modelo alfix_model.pkl...")
-        model_path = os.path.join(os.path.dirname(__file__), 'alfix_model.pkl')
-        model = joblib.load(model_path)
-        logging.info("Modelo cargado correctamente.")
-    return model
+    model_path = os.path.join(os.path.dirname(__file__), 'alfix_model.pkl')
+    model = joblib.load(model_path)
+
+# Lanzar la carga sin bloquear Flask
+threading.Thread(target=load_model_async).start()
+
 
 
 # Parámetros de escalamiento del score
@@ -320,9 +323,10 @@ def handler():
         
         # Predecir Probabilidad de Default (PD)
         #pd_probability = model.predict_proba(input_df)[0][1]
-        
-        mdl = get_model()
-        pd_probability = mdl.predict_proba(input_df)[0][1]
+        if model is None:
+            return jsonify({"error": "Modelo cargando, intenta nuevamente."}), 503
+
+        pd_probability = model.predict_proba(input_df)[0][1]
 
 
         # Calcular Score (crudo y final)
