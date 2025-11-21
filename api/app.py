@@ -31,6 +31,12 @@ import pandas as pd
 import os
 import bisect
 import warnings
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s"
+)
 
 warnings.filterwarnings("ignore")
 
@@ -50,9 +56,12 @@ model = None
 def get_model():
     global model
     if model is None:
-        #model_path = os.path.join(os.path.dirname(__file__), 'alfix_model.pkl')
-        model = joblib.load('./alfix_model.pkl')
+        logging.info("Cargando modelo alfix_model.pkl...")
+        model_path = os.path.join(os.path.dirname(__file__), 'alfix_model.pkl')
+        model = joblib.load(model_path)
+        logging.info("Modelo cargado correctamente.")
     return model
+
 
 # Parámetros de escalamiento del score
 SCORING_OFFSET = 437.9502843417596
