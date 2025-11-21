@@ -4,4 +4,4 @@ numpy
 pandas
 lightgbm
 scikit-learn
-psycopg2-binary # Para conectar con Supabase/Postgres
+psycopg2-binary
