@@ -44,25 +44,33 @@ app = Flask(__name__)
 
 # --- 1. Cargar Artefactos y Constantes ---
 
-#try:
-    # Cargar modelo
-    
-    #model_path = os.path.join(os.path.dirname(__file__), 'alfix_model.pkl')
-    #model = joblib.load(model_path)
-#except FileNotFoundError:
-
-model = None
-import threading
-
+# Load model synchronously at startup. If missing, fail fast so Cloud Run
+# restarts the container and you get a clear deployment error instead of
+# allowing the service to run without the model.
+MODEL_PATH = os.environ.get("MODEL_PATH") or os.path.join(os.path.dirname(__file__), 'alfix_model.pkl')
 model = None
 
-def load_model_async():
+def load_model():
+    """Carga el modelo desde `MODEL_PATH`. Lanza excepciones si falla.
+
+    Esto asegura que el contenedor falle al inicio si el archivo no existe,
+    evitando que la API arranque en un estado inválido (model == None).
+    """
     global model
-    model_path = os.path.join(os.path.dirname(__file__), 'alfix_model.pkl')
-    model = joblib.load(model_path)
+    try:
+        logging.info(f"Loading model from {MODEL_PATH}")
+        model = joblib.load(MODEL_PATH)
+        logging.info("Model loaded successfully.")
+    except FileNotFoundError:
+        logging.exception(f"Model file not found at {MODEL_PATH}.")
+        raise
+    except Exception:
+        logging.exception("Failed to load the model.")
+        raise
 
-# Lanzar la carga sin bloquear Flask
-threading.Thread(target=load_model_async).start()
+# Ejecutar carga en el arranque (sin hilos). Si falta el archivo, el proceso
+# terminará con excepción y Cloud Run marcará el despliegue como fallido.
+load_model()
 
 
 
