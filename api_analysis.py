@@ -38,12 +38,19 @@ app = Flask(__name__)
 
 # --- 1. Cargar Artefactos y Constantes ---
 
-try:
+#try:
     # Cargar modelo
-    model_path = os.path.join(os.path.dirname(__file__), 'alfix_model.pkl')
-    model = joblib.load(model_path)
-except FileNotFoundError:
-    model = None
+ #   model_path = os.path.join(os.path.dirname(__file__), 'alfix_model.pkl')
+  #  model = joblib.load(model_path)
+#except FileNotFoundError:
+ #   model = None
+
+def load_model():
+    global model
+    if model is None:
+        model_path = os.path.join(os.path.dirname(__file__), 'alfix_model.pkl')
+        model = joblib.load(model_path)
+    return model
 
 # Parámetros de escalamiento del score
 SCORING_OFFSET = 437.9502843417596
@@ -284,6 +291,7 @@ def handler():
     """
     Recibe los datos financieros, calcula el score y devuelve un análisis completo.
     """
+    model = load_model()
     if model is None:
         return jsonify({"error": "Modelo no encontrado. Asegúrate de que 'alfix_model.pkl' esté en el directorio /api."}), 500
 

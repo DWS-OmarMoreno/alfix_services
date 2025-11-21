@@ -1,22 +1,24 @@
+# Imagen base de Python
 FROM python:3.10-slim
 
+# Instalar dependencias del SO necesarias para LightGBM
+RUN apt-get update && apt-get install -y libgomp1
+
+# Directorio de trabajo
 WORKDIR /app
 
+# Copiar requisitos y modelo
 COPY requirements.txt .
+COPY alfix_model.pkl . 
 
+# Instalar dependencias Python
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
-COPY api/ ./api/
+# Copiar la app
+COPY api_analysis.py .
 
-# Copy the trained model into the image. This will fail the build if the
-# model file is not present in the build context which makes the issue
-# visible at build time rather than at runtime.
-COPY api/alfix_model.pkl ./api/alfix_model.pkl
-
-# Expose port and set MODEL_PATH env var so the app knows where to load the model
-ENV MODEL_PATH=/app/api/alfix_model.pkl
-
+# Exponer puerto Cloud Run
 EXPOSE 8080
 
-CMD ["python", "api/app.py"]
+# Run
+CMD ["python", "api_analysis.py"]
